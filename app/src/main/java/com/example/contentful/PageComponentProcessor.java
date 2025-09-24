@@ -15,7 +15,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 
 // locale is sharding key
-public class PageComponentProcessor extends KeyedProcessFunction<String, CommonWrapper, String> {
+public class PageComponentProcessor extends KeyedProcessFunction<String, CommonWrapper, PageComponent> {
 
     private static final Logger logger = LoggerFactory.getLogger(PageComponentProcessor.class);
 
@@ -32,7 +32,7 @@ public class PageComponentProcessor extends KeyedProcessFunction<String, CommonW
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
-    public void processElement(CommonWrapper value, KeyedProcessFunction<String, CommonWrapper, String>.Context ctx, Collector<String> out) throws Exception {
+    public void processElement(CommonWrapper value, KeyedProcessFunction<String, CommonWrapper, PageComponent>.Context ctx, Collector<PageComponent> out) throws Exception {
         String locale = ctx.getCurrentKey();
         
         logger.debug("Processing {} for locale: {}", value.getType(), locale);
@@ -53,7 +53,7 @@ public class PageComponentProcessor extends KeyedProcessFunction<String, CommonW
         }
     }
 
-    private void processComponent(Component component, Collector<String> out) throws Exception {
+    private void processComponent(Component component, Collector<PageComponent> out) throws Exception {
         logger.debug("Processing component: id={}, type={}, published={}, childComponents={}", 
             component.id, component.type, component.published, component.components.size());
 
@@ -85,12 +85,12 @@ public class PageComponentProcessor extends KeyedProcessFunction<String, CommonW
         }
     }
 
-    private ResolutionResult processPage(Page page, Collector<String> out) throws Exception {
+    private ResolutionResult processPage(Page page, Collector<PageComponent> out) throws Exception {
         logger.debug("Processing page: id={}, type={}, published={}, componentIds={}", 
             page.id, page.type, page.published, page.components);
         
         // TODO - create or UPDATE - we are only creating now
-        PageComponent pageComponent = new PageComponent(page.id, page.type, page.published, page.components);
+        PageComponent pageComponent = new PageComponent(page.id, page.type, page.locale, page.published, page.components);
 
         // recursive resolution
         ResolutionResult result = performPageResolution(pageComponent);
@@ -149,16 +149,15 @@ public class PageComponentProcessor extends KeyedProcessFunction<String, CommonW
     /**
      * decide whether to produce output
      */
-    private void emitPageComponentIfReady(PageComponent pageComponent, ResolutionResult result, Collector<String> out) throws Exception {
+    private void emitPageComponentIfReady(PageComponent pageComponent, ResolutionResult result, Collector<PageComponent> out) throws Exception {
         // if fully resolved
         if (result.isFullyResolved()) {
-            logger.debug("Emitting fully resolved page: {} with {} resolved components", 
-                pageComponent.pageId, pageComponent.resolvedComponents.size());
-            String jsonOutput = objectMapper.writeValueAsString(pageComponent);
-            out.collect(jsonOutput);
+            logger.debug("Emitting fully resolved page: {} with {} resolved components",
+                         pageComponent.pageId, pageComponent.resolvedComponents.size());
+            out.collect(pageComponent);
         } else {
-            logger.debug("Page {} not ready for output - missing: {}, circular: {}", 
-                pageComponent.pageId, result.getMissingComponentIds(), result.getCircularReferences());
+            logger.debug("Page {} not ready for output - missing: {}, circular: {}",
+                         pageComponent.pageId, result.getMissingComponentIds(), result.getCircularReferences());
         }
     }
 

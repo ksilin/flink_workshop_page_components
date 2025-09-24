@@ -12,6 +12,9 @@ public class Component {
     	public List<String> components;
     	public String locale;
 
+    // Default constructor for POJO & Jackson
+    public Component() {
+    }
 
     public Component(String id, String type, String label, String name, Boolean published, List<String> components, String locale) {
         this.id = id;

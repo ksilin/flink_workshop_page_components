@@ -93,3 +93,24 @@ tasks.named<Test>("test") {
     systemProperty("log4j2.configurationFile", "log4j2-test.xml")
 }
 
+tasks.register<JavaExec>("runConfluentCloudPageComponentsApp") {
+    group = "application"
+    description = "Run with minimal JVM config for testing"
+    classpath = sourceSets.test.get().runtimeClasspath
+    mainClass.set("com.example.contentful.ConfluentCloudPageComponentApp")
+
+    jvmArgs(
+        // Module fixes only
+        "--add-opens", "java.base/java.util=ALL-UNNAMED",
+        "--add-opens", "java.base/java.lang=ALL-UNNAMED",
+        "--add-opens", "java.base/java.util.concurrent.atomic=ALL-UNNAMED",
+        "--add-opens", "java.base/java.io=ALL-UNNAMED",
+
+        // Essential memory settings only
+        "-Xms4g",                           // Initial heap
+        "-Xmx8g",                           // Max heap
+        "-XX:MetaspaceSize=1g",             // Initial metaspace
+        "-XX:MaxMetaspaceSize=2g",          // Max metaspace
+        "-XX:MaxDirectMemorySize=4g"        // Direct memory for RocksDB
+    )
+}

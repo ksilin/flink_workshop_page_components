@@ -10,6 +10,9 @@ public class Page {
     	public List<String> components;
     	public String locale;
 
+    // Default ctor for POJO & JACKSON
+    public Page() {
+    }
 
     public Page(String id, String type, Boolean published, List<String> components, String locale) {
         this.id = id;

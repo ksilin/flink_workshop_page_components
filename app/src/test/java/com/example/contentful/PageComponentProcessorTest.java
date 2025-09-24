@@ -16,9 +16,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class PageComponentProcessorTest {
 
-    private KeyedOneInputStreamOperatorTestHarness<String, CommonWrapper, String> testHarness;
+    private KeyedOneInputStreamOperatorTestHarness<String, CommonWrapper, PageComponent> testHarness;
     private PageComponentProcessor processor;
-    private ObjectMapper objectMapper;
 
     @BeforeEach
     public void setup() throws Exception {
@@ -29,7 +28,6 @@ public class PageComponentProcessorTest {
                 CommonWrapper::extractLocale, // key selector
                 TypeInformation.of(String.class)  // key type
         );
-        objectMapper = new ObjectMapper();
         testHarness.open();
     }
 
@@ -42,7 +40,7 @@ public class PageComponentProcessorTest {
         testHarness.processElement(new CommonWrapper(page1), 1000L);
         testHarness.processElement(new CommonWrapper(page2), 2000L);
 
-        List<String> outputs = testHarness.extractOutputValues();
+        List<PageComponent> outputs = testHarness.extractOutputValues();
         assertEquals(0, outputs.size(), "Should produce no output when components are missing");
 
         // TODO - state introspection
@@ -93,7 +91,7 @@ public class PageComponentProcessorTest {
 
         // Send component - should trigger resolution and produce output
         testHarness.processElement(new CommonWrapper(comp1), 2000L);
-        List<String> outputs = testHarness.extractOutputValues();
+        List<PageComponent> outputs = testHarness.extractOutputValues();
         assertEquals(1, outputs.size(), "Should produce output when all components resolved");
 
         // Verify output contains expected page data
@@ -109,7 +107,7 @@ public class PageComponentProcessorTest {
         testHarness.processElement(new CommonWrapper(page), 1000L);
         testHarness.processElement(new CommonWrapper(comp1), 2000L);
 
-        List<String> outputs = testHarness.extractOutputValues();
+        List<PageComponent> outputs = testHarness.extractOutputValues();
         assertEquals(0, outputs.size(), "Should not produce output when some components are missing");
     }
 
@@ -130,7 +128,7 @@ public class PageComponentProcessorTest {
 
         // Send page - should resolve immediately with all 3 components
         testHarness.processElement(new CommonWrapper(page), 4000L);
-        List<String> outputs = testHarness.extractOutputValues();
+        List<PageComponent> outputs = testHarness.extractOutputValues();
         assertEquals(1, outputs.size(), "Should produce output immediately when components available");
 
         verifyPageComponentOutput(outputs.get(0), "page1", "landing", 3);
@@ -151,11 +149,11 @@ public class PageComponentProcessorTest {
         testHarness.processElement(new CommonWrapper(comp2), 3000L);
         testHarness.processElement(new CommonWrapper(comp3), 4000L);
 
-        List<String> outputs = testHarness.extractOutputValues();
+        List<PageComponent> outputs = testHarness.extractOutputValues();
         assertEquals(1, outputs.size(), "Should resolve deep nested structure");
 
         // Verify nested structure in output
-        PageComponent result = objectMapper.readValue(outputs.get(0), PageComponent.class);
+        PageComponent result = outputs.get(0);
         assertEquals(1, result.resolvedComponents.size());
         PageComponent.ResolvedComponent root = result.resolvedComponents.get(0);
         assertEquals("comp1", root.id);
@@ -178,11 +176,11 @@ public class PageComponentProcessorTest {
         testHarness.processElement(new CommonWrapper(comp1), 3000L);
         testHarness.processElement(new CommonWrapper(page), 4000L);
 
-        List<String> outputs = testHarness.extractOutputValues();
+        List<PageComponent> outputs = testHarness.extractOutputValues();
         assertEquals(1, outputs.size(), "Should resolve mixed tree structure");
 
         // Verify tree structure
-        PageComponent result = objectMapper.readValue(outputs.get(0), PageComponent.class);
+        PageComponent result = outputs.get(0);
         PageComponent.ResolvedComponent root = result.resolvedComponents.get(0);
         assertEquals("comp1", root.id);
         assertEquals(2, root.childComponents.size());
@@ -299,7 +297,7 @@ public class PageComponentProcessorTest {
         assertEquals(1, testHarness.getOutput().size(), "Should produce output after complete resolution");
 
         // output matches state
-        PageComponent pageComponent = objectMapper.readValue(testHarness.extractOutputValues().get(0), PageComponent.class);
+        PageComponent pageComponent = testHarness.extractOutputValues().get(0);
         assertEquals("page1", pageComponent.pageId);
         assertEquals(1, pageComponent.resolvedComponents.size());
         
@@ -367,9 +365,9 @@ public class PageComponentProcessorTest {
         assertEquals(2, testHarness.getOutput().size(), "Should have output from both page resolutions");
 
         // both outputs contain the shared component
-        List<String> outputs = testHarness.extractOutputValues();
-        PageComponent result1 = objectMapper.readValue(outputs.get(0), PageComponent.class);
-        PageComponent result2 = objectMapper.readValue(outputs.get(1), PageComponent.class);
+        List<PageComponent> outputs = testHarness.extractOutputValues();
+        PageComponent result1 = outputs.get(0);
+        PageComponent result2 = outputs.get(1);
 
         // Find which result is which page
         PageComponent page1Result = result1.pageId.equals("page1") ? result1 : result2;
@@ -387,7 +385,7 @@ public class PageComponentProcessorTest {
         assertTrue(foundSharedInPage2, "page2 should also contain shared component");
     }
 
-    // we detect dircular refs, but still produce output
+    // we detect circular refs, but still produce output
     @Test 
     public void testStateIntrospection_CircularReferenceDetection() throws Exception {
 
@@ -439,8 +437,7 @@ public class PageComponentProcessorTest {
         return new Component(id, type, id + "-label", id + "-name", true, childComponents, "en-US");
     }
 
-    private void verifyPageComponentOutput(String jsonOutput, String expectedPageId, String expectedType, int expectedComponentCount) throws Exception {
-        PageComponent result = objectMapper.readValue(jsonOutput, PageComponent.class);
+    private void verifyPageComponentOutput(PageComponent result, String expectedPageId, String expectedType, int expectedComponentCount) throws Exception {
         assertEquals(expectedPageId, result.pageId);
         assertEquals(expectedType, result.pageType);
         assertEquals(expectedComponentCount, result.resolvedComponents.size());
