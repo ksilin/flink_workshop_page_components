@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN" monitorInterval="30">
+    <Appenders>
+        <!-- Console appender for test output -->
+        <Console name="CONSOLE" target="SYSTEM_OUT">
+            <PatternLayout pattern="%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} -- %msg%n"/>
+        </Console>
+    </Appenders>
+
+    <Loggers>
+        <!-- Set root logger level to WARN to reduce noise during tests -->
+        <Root level="WARN">
+            <AppenderRef ref="CONSOLE"/>
+        </Root>
+
+        <!-- Suppress verbose Kafka client logging -->
+        <Logger name="org.apache.kafka.clients.NetworkClient" level="WARN"/>
+        <Logger name="org.apache.kafka.common.security.authenticator.SaslClientAuthenticator" level="WARN"/>
+        <Logger name="org.apache.kafka.common.network.Selector" level="WARN"/>
+        <Logger name="org.apache.kafka.clients.producer.internals.TransactionManager" level="WARN"/>
+        <Logger name="org.apache.kafka.clients.producer.internals.Sender" level="WARN"/>
+        <Logger name="org.apache.kafka.common.security.ssl.DefaultSslEngineFactory" level="WARN"/>
+        <Logger name="org.apache.kafka.common.network.SslTransportLayer" level="WARN"/>
+        <Logger name="org.apache.kafka.clients.producer.KafkaProducer" level="WARN"/>
+        <Logger name="org.apache.kafka.clients.ClientUtils" level="WARN"/>
+        <Logger name="org.apache.kafka.clients.consumer.KafkaConsumer" level="WARN"/>
+
+        <!-- Suppress verbose Docker/TestContainers HTTP client logging -->
+        <Logger name="com.github.dockerjava.zerodep.shaded.org.apache.hc" level="WARN"/>
+
+        <!-- Reduce Flink TypeExtractor warnings -->
+        <Logger name="org.apache.flink.api.java.typeutils.TypeExtractor" level="WARN"/>
+
+        <!-- Keep general application logging at WARN level during tests -->
+        <Logger name="com.example.flink" level="WARN"/>
+        
+        <!-- Enable DEBUG logging for contentful package during tests -->
+        <Logger name="com.example.contentful" level="DEBUG"/>
+
+        <!-- Suppress other commonly verbose loggers -->
+        <Logger name="org.apache.flink.runtime.dispatcher" level="WARN"/>
+        <Logger name="org.apache.pekko.actor" level="WARN"/>
+        <Logger name="akka.actor" level="WARN"/>
+        
+        <!-- Suppress TestContainers verbose logging -->
+        <Logger name="org.testcontainers" level="WARN"/>
+        <Logger name="com.github.dockerjava" level="WARN"/>
+        
+        <!-- Suppress Flink test framework noise -->
+        <Logger name="org.apache.flink.runtime.executiongraph" level="WARN"/>
+        <Logger name="org.apache.flink.runtime.jobmaster" level="WARN"/>
+        <Logger name="org.apache.flink.runtime.scheduler" level="WARN"/>
+    </Loggers>
+</Configuration>
